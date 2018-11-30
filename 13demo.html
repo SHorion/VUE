@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+	<title>vue 13demo</title>
+	<script type="text/javascript" src="js/vue.js"></script>
+	<style type="text/css">
+		*{ margin: 0; padding: 0; }
+		li{ list-style: none; }
+		body{ height: 100%; }
+
+		#header{ width: 100%; height: 40px; background: #666; color: white; text-align: center; line-height: 40px; position: absolute; left: 0; top: 0; z-index: 10; }
+		#header button{ height: 100%; padding: 0 5px; }
+		#header button:nth-of-type(1){ float: left; }
+		#header button:nth-of-type(2){ float: right; }
+
+		#list{ position: relative;; top: 40px; overflow: hidden; }
+		#list .list_user p{ background: #ccc; padding-left: 15px; font-size: 15px; height: 20px; }
+		#list .list_user ul li{ height: 50px; line-height: 50px; border-bottom: 1px #ccc solid; padding-left: 10px }
+		#list .list_index{ position: fixed; right: 10px; top: 50%; font-size: 20px; }
+		#list .list_index li{ margin: 5px 0; }
+
+		#alert{ width: 100%; height: 100%; background: rgb(0,0,0,0.5); position:fixed; left: 0; top: 0; z-index: 20; display: none; }
+		#alert .alert_content{ width: 200px; height: 150px; background: white; border-radius: 5px; margin: auto; position: relative; }
+		#alert .alert_title{ padding: 5px; border-bottom: 1px #ccc solid; }
+		#alert .alert_body{ height: 50px; line-height: 50px; text-align: center; }
+		#alert .alert_btn{ position: relative; bottom: 0; }
+		#alert .alert_btn button:nth-of-type(1){ margin: 25px;padding: 5px; }
+		#alert .alert_btn button:nth-of-type(2){ margin: 25px;padding: 5px; }
+
+	</style>
+</head>
+<body>
+	<div id="app">
+		<my-header custom-title="通讯录" custom-fixed>
+			<button @touchstart="backbtn" slot="left">返回</button>
+			<button @touchstart="homebtn" slot="right">主页</button>
+		</my-header>
+		<my-list :user-data="userData"></my-list>
+		<my-alert custom-title="呼叫">
+			<div class="alert_btn">
+				<button @touchstart="confirmBtn">确定</button>
+				<button @touchstart="cancelBtn">取消</button>
+			</div>
+		</my-alert>
+
+	</div>
+	<script>
+		//测试数据
+		var userData=[
+			{
+				"index":"A",
+				"users":[
+					{"name":'a1',"tel":"111111"},
+					{"name":'a2',"tel":"111112"},
+					{"name":'a3',"tel":"111113"}
+				]
+			},
+			{
+				"index":"B",
+				"users":[
+					{"name":'b1',"tel":"111114"},
+					{"name":'b2',"tel":"111115"},
+					{"name":'b3',"tel":"111116"}
+				]
+			},
+			{
+				"index":"C",
+				"users":[
+					{"name":'c1',"tel":"111117"},
+					{"name":'c2',"tel":"111118"},
+					{"name":'c3',"tel":"111119"}
+				]
+			},
+			{
+				"index":"D",
+				"users":[
+					{"name":'d1',"tel":"111121"},
+					{"name":'d2',"tel":"111123"},
+					{"name":'d3',"tel":"111123"}
+				]
+			},
+			{
+				"index":"E",
+				"users":[
+					{"name":'e1',"tel":"111127"},
+					{"name":'e2',"tel":"111128"},
+					{"name":'e3',"tel":"111129"}
+				]
+			},
+			{
+				"index":"F",
+				"users":[
+					{"name":'f1',"tel":"111124"},
+					{"name":'f2',"tel":"111125"},
+					{"name":'f3',"tel":"111126"}
+				]
+			},
+		]
+		// 定义空实例
+		var busVM = new Vue();
+		//定义全局组件
+		Vue.component('my-header',{
+			template : `<div id="header" :style="{ 'position': customFixed?'fixed':'static' }">
+								<slot name="left"></slot>
+								{{customTitle}}
+								<slot name="right"></slot>
+						</div>`,
+			props:{
+				'customTitle':{
+					type:String,
+					default:'标题'
+				},
+				'customFixed':{
+					type:Boolean,
+					default:false
+				}
+			}
+		});
+		Vue.component('my-list',{
+			template : `<div id="list">
+							<ul class="list_user" ref="listUser" @touchmove="bMove=true">
+								<li v-for="item in userData">
+									<p>{{item.index}}</p>
+									<ul>
+										<li @touchend="showTel(user.tel)" v-for="user in item.users">{{user.name}}</li>
+									</ul>
+								</li>
+							</ul>
+							<ul class="list_index" ref="listIndex">
+								<li v-for="item in userIndex" @touchstart="setScroll">{{item}}</li>
+							</ul>
+						</div>`,
+			props:{
+				'user-data':{
+					type:Array,
+					default:function(){
+						return [];
+					}
+				}
+			},
+			// 定义数据初始化数据，为滑动时不触发事件做判断条件
+			data:function(){
+				return {
+					bMove:false
+				};
+			},
+			// 返回加工过的userIndex
+			computed:{
+				userIndex:function(){
+					return this.filterIndex(this.userData)
+				}
+			},
+			methods:{
+				//  对索引进行加工
+				filterIndex:function(data){
+					var result = [];
+					for(var i=0;i<data.length;i++){
+						if (data[i].index) {
+							result.push(data[i].index);
+						}
+					}
+					return result;
+				},
+				// 获取索引字母的高度使其居中
+				setListIndexPos:function(){
+					var iH = this.$refs.listIndex.offsetHeight;
+					this.$refs.listIndex.style.marginTop = -iH/2+"px";
+				},
+				// 设置点击索引是滚动条滚动到特定位置
+				setScroll:function(ev){
+					var aP = this.$refs.listUser.getElementsByTagName('p');
+					for(var i=0;i<aP.length;i++){
+						if(aP[i].innerHTML == ev.target.innerHTML){
+							// 浏览器兼容问题
+							// document.body.scrollTop = aP[i].offsetTop;
+							document.documentElement.scrollTop = aP[i].offsetTop;
+						}
+					}
+				},
+				showTel:function(tel){
+					if(!this.bMove){
+						// console.log(tel);
+						// 订阅
+						busVM.$emit('changeEvents',tel)
+					}else{
+						this.bMove=false;
+					}
+				}
+			},
+			//挂载，添加生命周期
+			mounted:function(){
+				this.setListIndexPos();
+			}
+		});
+		Vue.component('my-alert',{
+			template : `<div id="alert" ref="alert">
+							<div class="alert_content">
+								<div class="alert_title">{{customTitle}}</div>
+								<div class="alert_body">{{customBody}}</div>
+								<slot></slot>
+							</div>
+						</div>`,
+			props:{
+				'customTitle':{
+					type:String,
+					default:'弹窗'
+				},
+			},
+			data:function(){
+				return {
+					'customBody':''
+				};
+			},
+			// 发布
+			mounted:function(){
+				busVM.$on('changeEvents',function(tel){
+					this.customBody=tel;
+					this.$refs.alert.style.display = "flex";
+				}.bind(this));
+			}
+		});
+		var vm = new Vue({
+			el:'#app',
+			data:{
+				userData:userData,
+			},
+			methods:{
+				'backbtn':function(){
+					alert(123);
+				},
+				'homebtn':function(){
+					alert(456);
+				},
+				'confirmBtn':function(){
+
+				},
+				'cancelBtn':function(){
+					// alert(9);
+					// console.log(this);
+					// $el：找到最外层组件
+					this.$children[2].$el.style.display = 'none';
+				},
+			},
+		});
+		
+
+	</script>
+</body>
+</html>
+

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>vue 4demo</title>
+	<script type="text/javascript" src="js/vue.js"></script>
+</head>
+<body>
+	<div id="app">
+		<button @click="changeComponent(1)">第一个</button>
+		<button @click="changeComponent(2)">第二个</button>
+		<button @click="changeComponent(3)">第三个</button>
+		<keep-alive>
+			<component :is="nowHeader"></component>
+		</keep-alive>
+	</div>
+	<script>
+
+		// 局部组件
+		var vm = new Vue({
+			el:'#app',
+			data:{
+				nowHeader : 'my-header-1'
+			},
+			components:{
+				'my-header-1':{
+					template : '<div>组件一	<input type="text"></div>',
+				},
+				'my-header-2':{
+					template : '<div>组件二	<input type="text"></div>',
+				},
+				'my-header-3':{
+					template : '<div>组件三	<input type="text"></div>',
+				},
+			},
+			methods:{
+				changeComponent:function(index) {
+					// body...
+					this.nowHeader = 'my-header-' + index;
+				}
+			},
+		});
+		
+
+	</script>
+</body>
+</html>
